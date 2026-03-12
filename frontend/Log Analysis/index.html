@@ -1,0 +1,1752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>LogSentinel AI — Cyber Threat Detection</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&family=Exo+2:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-void: #020608;
+    --bg-deep: #040c10;
+    --bg-panel: #071318;
+    --bg-card: #0a1a20;
+    --accent-cyan: #00f5d4;
+    --accent-green: #39ff14;
+    --accent-red: #ff3535;
+    --accent-amber: #ffb700;
+    --accent-blue: #0af;
+    --text-primary: #d6f0f0;
+    --text-secondary: #7aabb0;
+    --text-dim: #3a6470;
+    --border-subtle: rgba(0,245,212,0.08);
+    --border-active: rgba(0,245,212,0.3);
+    --glow-cyan: 0 0 20px rgba(0,245,212,0.4);
+    --glow-green: 0 0 20px rgba(57,255,20,0.4);
+    --glow-red: 0 0 20px rgba(255,53,53,0.4);
+    --font-mono: 'Share Tech Mono', monospace;
+    --font-display: 'Rajdhani', sans-serif;
+    --font-body: 'Exo 2', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg-void);
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.6;
+    overflow-x: hidden;
+    cursor: default;
+  }
+
+  /* ── NOISE OVERLAY ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.4;
+  }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg-void); }
+  ::-webkit-scrollbar-thumb { background: var(--accent-cyan); border-radius: 2px; }
+
+  /* ── ANIMATED GRID BG ── */
+  .grid-bg {
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,245,212,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,245,212,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+    animation: gridPulse 8s ease-in-out infinite;
+  }
+  @keyframes gridPulse {
+    0%,100% { opacity: 0.5; }
+    50% { opacity: 1; }
+  }
+
+  /* ── SCAN LINE ── */
+  .scanline {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
+    animation: scan 4s linear infinite;
+    pointer-events: none;
+    z-index: 100;
+    opacity: 0.4;
+  }
+  @keyframes scan { 0% { top: -2px; } 100% { top: 100vh; } }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 5%;
+    height: 64px;
+    background: rgba(2,6,8,0.92);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .nav-logo {
+    font-family: var(--font-mono);
+    font-size: 1.1rem;
+    color: var(--accent-cyan);
+    letter-spacing: 0.15em;
+    text-shadow: var(--glow-cyan);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .nav-logo .bracket { color: var(--text-dim); }
+  .nav-links {
+    display: flex;
+    gap: 32px;
+    list-style: none;
+  }
+  .nav-links a {
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: color 0.2s;
+    position: relative;
+  }
+  .nav-links a::after {
+    content: '';
+    position: absolute;
+    bottom: -4px; left: 0; right: 0;
+    height: 1px;
+    background: var(--accent-cyan);
+    transform: scaleX(0);
+    transition: transform 0.2s;
+  }
+  .nav-links a:hover { color: var(--accent-cyan); }
+  .nav-links a:hover::after { transform: scaleX(1); }
+  .nav-cta {
+    font-family: var(--font-display);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--bg-void);
+    background: var(--accent-cyan);
+    border: none;
+    padding: 8px 20px;
+    cursor: pointer;
+    clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+    transition: box-shadow 0.2s, background 0.2s;
+  }
+  .nav-cta:hover { box-shadow: var(--glow-cyan); background: #fff; }
+
+  /* ── MAIN CONTENT ── */
+  main { position: relative; z-index: 1; }
+
+  /* ── HERO ── */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 80px 5% 60px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-bg-orbs {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+  .orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.12;
+    animation: orbFloat 12s ease-in-out infinite;
+  }
+  .orb-1 { width: 500px; height: 500px; background: var(--accent-cyan); top: -10%; right: -5%; animation-delay: 0s; }
+  .orb-2 { width: 300px; height: 300px; background: var(--accent-blue); bottom: 10%; left: 5%; animation-delay: -4s; }
+  .orb-3 { width: 200px; height: 200px; background: var(--accent-green); top: 40%; left: 40%; animation-delay: -8s; }
+  @keyframes orbFloat {
+    0%,100% { transform: translate(0,0) scale(1); }
+    33% { transform: translate(20px,-30px) scale(1.05); }
+    66% { transform: translate(-15px,20px) scale(0.95); }
+  }
+
+  .hero-tag {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--accent-cyan);
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 28px;
+    opacity: 0;
+    animation: fadeUp 0.8s 0.2s forwards;
+  }
+  .hero-tag::before {
+    content: '';
+    display: block;
+    width: 32px; height: 1px;
+    background: var(--accent-cyan);
+    box-shadow: var(--glow-cyan);
+  }
+  .status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent-green);
+    box-shadow: var(--glow-green);
+    animation: blink 1.5s ease-in-out infinite;
+  }
+  @keyframes blink { 0%,100% { opacity:1; } 50% { opacity:0.2; } }
+
+  .hero-title {
+    font-family: var(--font-display);
+    font-size: clamp(3rem, 7vw, 6.5rem);
+    font-weight: 700;
+    line-height: 0.95;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+    opacity: 0;
+    animation: fadeUp 0.8s 0.4s forwards;
+  }
+  .hero-title .accent { color: var(--accent-cyan); display: block; text-shadow: var(--glow-cyan); }
+  .hero-title .dim { color: var(--text-dim); font-weight: 300; }
+
+  .hero-sub {
+    font-family: var(--font-body);
+    font-size: 1.05rem;
+    color: var(--text-secondary);
+    max-width: 520px;
+    line-height: 1.8;
+    margin-bottom: 48px;
+    opacity: 0;
+    animation: fadeUp 0.8s 0.6s forwards;
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    opacity: 0;
+    animation: fadeUp 0.8s 0.8s forwards;
+  }
+  .btn-primary {
+    font-family: var(--font-display);
+    font-size: 0.88rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--bg-void);
+    background: var(--accent-cyan);
+    border: none;
+    padding: 14px 36px;
+    cursor: pointer;
+    clip-path: polygon(12px 0%,100% 0%,calc(100% - 12px) 100%,0% 100%);
+    transition: box-shadow 0.2s, transform 0.2s;
+  }
+  .btn-primary:hover { box-shadow: var(--glow-cyan); transform: translateY(-2px); }
+  .btn-outline {
+    font-family: var(--font-display);
+    font-size: 0.88rem;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent-cyan);
+    background: transparent;
+    border: 1px solid var(--border-active);
+    padding: 14px 36px;
+    cursor: pointer;
+    transition: background 0.2s, box-shadow 0.2s;
+  }
+  .btn-outline:hover { background: rgba(0,245,212,0.06); box-shadow: var(--glow-cyan); }
+
+  /* Live terminal widget */
+  .hero-terminal {
+    position: absolute;
+    right: 5%;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 420px;
+    background: rgba(7,19,24,0.95);
+    border: 1px solid var(--border-active);
+    box-shadow: var(--glow-cyan), inset 0 0 40px rgba(0,245,212,0.02);
+    opacity: 0;
+    animation: fadeIn 1s 1s forwards;
+  }
+  @media (max-width: 1050px) { .hero-terminal { display: none; } }
+  .term-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border-subtle);
+    background: rgba(0,245,212,0.04);
+  }
+  .term-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .td-r { background: #ff5f57; }
+  .td-y { background: #febc2e; }
+  .td-g { background: #28c840; }
+  .term-title {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    margin-left: auto;
+    letter-spacing: 0.1em;
+  }
+  .term-body {
+    padding: 16px;
+    font-family: var(--font-mono);
+    font-size: 0.73rem;
+    line-height: 1.9;
+    min-height: 280px;
+    overflow: hidden;
+  }
+  .term-line { display: flex; gap: 8px; }
+  .term-prompt { color: var(--accent-cyan); flex-shrink: 0; }
+  .term-cmd { color: var(--text-primary); }
+  .term-out { color: var(--text-secondary); padding-left: 16px; }
+  .term-warn { color: var(--accent-amber); padding-left: 16px; }
+  .term-alert { color: var(--accent-red); padding-left: 16px; text-shadow: var(--glow-red); }
+  .term-ok { color: var(--accent-green); padding-left: 16px; text-shadow: var(--glow-green); }
+  .cursor {
+    display: inline-block;
+    width: 8px; height: 14px;
+    background: var(--accent-cyan);
+    vertical-align: middle;
+    animation: blink 1s step-end infinite;
+  }
+
+  /* ── STATS STRIP ── */
+  .stats-strip {
+    border-top: 1px solid var(--border-subtle);
+    border-bottom: 1px solid var(--border-subtle);
+    background: var(--bg-panel);
+    padding: 32px 5%;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background-color: var(--border-subtle);
+    position: relative;
+    z-index: 1;
+  }
+  .stat-item {
+    background: var(--bg-panel);
+    padding: 28px 32px;
+    text-align: center;
+    transition: background 0.3s;
+  }
+  .stat-item:hover { background: var(--bg-card); }
+  .stat-num {
+    font-family: var(--font-display);
+    font-size: 2.8rem;
+    font-weight: 700;
+    color: var(--accent-cyan);
+    text-shadow: var(--glow-cyan);
+    line-height: 1;
+    display: block;
+    margin-bottom: 6px;
+  }
+  .stat-label {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    color: var(--text-dim);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+
+  /* ── SECTIONS ── */
+  section { padding: 100px 5%; position: relative; z-index: 1; }
+
+  .section-tag {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    color: var(--accent-cyan);
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .section-tag::before {
+    content: '//';
+    color: var(--text-dim);
+  }
+  .section-title {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
+    line-height: 1.1;
+    margin-bottom: 20px;
+  }
+  .section-desc {
+    color: var(--text-secondary);
+    font-size: 1rem;
+    max-width: 540px;
+    line-height: 1.8;
+  }
+
+  /* ── HOW IT WORKS ── */
+  .pipeline {
+    background: var(--bg-deep);
+    border-top: 1px solid var(--border-subtle);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .pipeline-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--border-subtle);
+    margin-top: 60px;
+  }
+  .pipeline-step {
+    background: var(--bg-panel);
+    padding: 36px 28px;
+    position: relative;
+    transition: background 0.3s, transform 0.3s;
+    cursor: default;
+  }
+  .pipeline-step:hover { background: var(--bg-card); transform: translateY(-4px); }
+  .pipeline-step::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--accent-cyan);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.4s;
+  }
+  .pipeline-step:hover::after { transform: scaleX(1); }
+  .step-num {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    margin-bottom: 16px;
+  }
+  .step-icon {
+    font-size: 2rem;
+    margin-bottom: 16px;
+    filter: drop-shadow(0 0 8px rgba(0,245,212,0.5));
+  }
+  .step-title {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+  }
+  .step-desc {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.7;
+  }
+  .step-tools {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 16px;
+  }
+  .tool-badge {
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    color: var(--accent-cyan);
+    background: rgba(0,245,212,0.08);
+    border: 1px solid rgba(0,245,212,0.2);
+    padding: 3px 8px;
+    letter-spacing: 0.05em;
+  }
+
+  /* ── ARCHITECTURE ── */
+  .arch-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 60px;
+    margin-top: 60px;
+    align-items: start;
+  }
+  .arch-diagram {
+    position: relative;
+  }
+  .arch-node {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 8px;
+    transition: border-color 0.3s, box-shadow 0.3s;
+    cursor: default;
+    position: relative;
+  }
+  .arch-node:hover {
+    border-color: var(--border-active);
+    box-shadow: 0 0 16px rgba(0,245,212,0.1);
+  }
+  .arch-node-icon {
+    width: 36px; height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    background: rgba(0,245,212,0.06);
+    border: 1px solid var(--border-subtle);
+    flex-shrink: 0;
+  }
+  .arch-node-text { flex: 1; }
+  .arch-node-name {
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-primary);
+  }
+  .arch-node-sub {
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    color: var(--text-dim);
+    letter-spacing: 0.06em;
+    margin-top: 2px;
+  }
+  .arch-connector {
+    width: 2px;
+    height: 20px;
+    background: linear-gradient(var(--accent-cyan), transparent);
+    margin-left: 37px;
+    opacity: 0.4;
+  }
+  .arch-node.highlighted { border-color: var(--accent-cyan); box-shadow: var(--glow-cyan); }
+  .arch-node.highlighted .arch-node-icon { background: rgba(0,245,212,0.15); }
+  .arch-node.alert { border-color: var(--accent-red); box-shadow: var(--glow-red); }
+  .arch-node.alert .arch-node-icon { background: rgba(255,53,53,0.1); border-color: rgba(255,53,53,0.3); }
+
+  .arch-specs { }
+  .spec-item {
+    border-left: 2px solid var(--border-subtle);
+    padding: 20px 24px;
+    margin-bottom: 16px;
+    transition: border-color 0.3s;
+  }
+  .spec-item:hover { border-color: var(--accent-cyan); }
+  .spec-label {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    color: var(--accent-cyan);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .spec-title {
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+  }
+  .spec-desc {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.7;
+  }
+
+  /* ── THREAT TYPES ── */
+  .threats-bg {
+    background: var(--bg-deep);
+    border-top: 1px solid var(--border-subtle);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .threats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-top: 60px;
+  }
+  .threat-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    padding: 32px 28px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s, transform 0.3s;
+    cursor: default;
+  }
+  .threat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: radial-gradient(circle at 0% 0%, rgba(0,245,212,0.04), transparent 60%);
+    opacity: 0;
+    transition: opacity 0.4s;
+  }
+  .threat-card:hover { border-color: var(--border-active); transform: translateY(-4px); }
+  .threat-card:hover::before { opacity: 1; }
+  .threat-severity {
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border: 1px solid;
+    display: inline-block;
+    margin-bottom: 20px;
+  }
+  .sev-critical { color: var(--accent-red); border-color: rgba(255,53,53,0.4); background: rgba(255,53,53,0.06); }
+  .sev-high { color: var(--accent-amber); border-color: rgba(255,183,0,0.4); background: rgba(255,183,0,0.06); }
+  .sev-medium { color: var(--accent-cyan); border-color: rgba(0,245,212,0.4); background: rgba(0,245,212,0.06); }
+  .threat-icon { font-size: 2.2rem; margin-bottom: 16px; }
+  .threat-name {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 10px;
+    color: var(--text-primary);
+  }
+  .threat-desc {
+    font-size: 0.84rem;
+    color: var(--text-secondary);
+    line-height: 1.7;
+  }
+  .threat-bar {
+    margin-top: 20px;
+    height: 2px;
+    background: var(--border-subtle);
+    position: relative;
+    overflow: hidden;
+  }
+  .threat-bar-fill {
+    height: 100%;
+    background: var(--accent-cyan);
+    box-shadow: var(--glow-cyan);
+    width: 0%;
+    transition: width 1.5s ease;
+  }
+  .threat-bar-fill.red { background: var(--accent-red); box-shadow: var(--glow-red); }
+  .threat-bar-fill.amber { background: var(--accent-amber); box-shadow: 0 0 12px rgba(255,183,0,0.5); }
+
+  /* ── TECH STACK ── */
+  .tech-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--border-subtle);
+    margin-top: 60px;
+  }
+  .tech-item {
+    background: var(--bg-panel);
+    padding: 32px 24px;
+    text-align: center;
+    transition: background 0.3s;
+    cursor: default;
+  }
+  .tech-item:hover { background: var(--bg-card); }
+  .tech-logo {
+    font-size: 2.4rem;
+    margin-bottom: 12px;
+    display: block;
+    filter: drop-shadow(0 0 8px rgba(0,245,212,0.3));
+  }
+  .tech-name {
+    font-family: var(--font-display);
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+  }
+  .tech-role {
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+  }
+
+  /* ── TEAM ── */
+  .team-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    margin-top: 60px;
+  }
+  .team-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    padding: 36px 28px;
+    text-align: center;
+    transition: border-color 0.3s, transform 0.3s;
+    cursor: default;
+    position: relative;
+    overflow: hidden;
+  }
+  .team-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--accent-cyan);
+    transform: scaleX(0);
+    transition: transform 0.3s;
+  }
+  .team-card:hover { border-color: var(--border-active); transform: translateY(-4px); }
+  .team-card:hover::after { transform: scaleX(1); }
+  .team-avatar {
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    border: 2px solid var(--border-active);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    background: rgba(0,245,212,0.05);
+    margin: 0 auto 20px;
+    box-shadow: var(--glow-cyan);
+  }
+  .team-name {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 4px;
+  }
+  .team-roll {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    color: var(--accent-cyan);
+    letter-spacing: 0.15em;
+    margin-bottom: 16px;
+  }
+  .team-desc {
+    font-size: 0.83rem;
+    color: var(--text-secondary);
+    line-height: 1.7;
+  }
+
+  /* ── METRICS ── */
+  .metrics-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 60px;
+    margin-top: 60px;
+    align-items: center;
+  }
+  .metric-row {
+    margin-bottom: 28px;
+  }
+  .metric-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .metric-name {
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-primary);
+  }
+  .metric-val {
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    color: var(--accent-cyan);
+  }
+  .metric-track {
+    height: 4px;
+    background: var(--border-subtle);
+    position: relative;
+    overflow: hidden;
+  }
+  .metric-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-cyan), var(--accent-blue));
+    box-shadow: var(--glow-cyan);
+    width: 0%;
+    transition: width 1.8s ease;
+  }
+  .metrics-text .section-title { margin-bottom: 24px; }
+  .metrics-callout {
+    background: rgba(0,245,212,0.04);
+    border: 1px solid var(--border-active);
+    padding: 24px;
+    margin-top: 32px;
+  }
+  .callout-label {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    color: var(--accent-cyan);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .callout-text {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.7;
+  }
+
+  /* ── ALERT LIVE FEED ── */
+  .feed-bg {
+    background: var(--bg-deep);
+    border-top: 1px solid var(--border-subtle);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .feed-layout {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 40px;
+    margin-top: 60px;
+  }
+  .feed-panel {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-subtle);
+    overflow: hidden;
+  }
+  .feed-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border-subtle);
+    background: rgba(0,245,212,0.03);
+  }
+  .feed-title {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    letter-spacing: 0.12em;
+  }
+  .feed-live {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    color: var(--accent-green);
+    letter-spacing: 0.1em;
+  }
+  .feed-body { padding: 12px; max-height: 340px; overflow: hidden; }
+  .feed-entry {
+    display: grid;
+    grid-template-columns: 70px 1fr 80px 80px;
+    gap: 12px;
+    align-items: center;
+    padding: 10px 8px;
+    border-bottom: 1px solid rgba(0,245,212,0.04);
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    transition: background 0.2s;
+    animation: entrySlide 0.4s ease;
+  }
+  @keyframes entrySlide { from { opacity:0; transform: translateX(-10px); } to { opacity:1; transform: none; } }
+  .feed-entry:hover { background: rgba(0,245,212,0.03); }
+  .feed-time { color: var(--text-dim); }
+  .feed-event { color: var(--text-secondary); }
+  .feed-ip { color: var(--accent-blue); }
+  .feed-status {
+    text-align: right;
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    padding: 2px 6px;
+    border: 1px solid;
+  }
+  .fs-block { color: var(--accent-red); border-color: rgba(255,53,53,0.3); background: rgba(255,53,53,0.05); }
+  .fs-alert { color: var(--accent-amber); border-color: rgba(255,183,0,0.3); background: rgba(255,183,0,0.05); }
+  .fs-ok { color: var(--accent-green); border-color: rgba(57,255,20,0.3); background: rgba(57,255,20,0.05); }
+
+  .feed-stats { }
+  .fstat {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-subtle);
+    padding: 24px;
+    margin-bottom: 12px;
+  }
+  .fstat-num {
+    font-family: var(--font-display);
+    font-size: 2.4rem;
+    font-weight: 700;
+    display: block;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .fstat-num.red { color: var(--accent-red); text-shadow: var(--glow-red); }
+  .fstat-num.amber { color: var(--accent-amber); }
+  .fstat-num.green { color: var(--accent-green); text-shadow: var(--glow-green); }
+  .fstat-label {
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    color: var(--text-dim);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  /* ── CTA ── */
+  .cta-section {
+    text-align: center;
+    padding: 120px 5%;
+    position: relative;
+    overflow: hidden;
+  }
+  .cta-section::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 50%, rgba(0,245,212,0.06), transparent 70%);
+  }
+  .cta-badge {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--accent-cyan);
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+    display: inline-block;
+  }
+  .cta-title {
+    font-family: var(--font-display);
+    font-size: clamp(2.5rem, 5vw, 5rem);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+    margin-bottom: 24px;
+  }
+  .cta-title span { color: var(--accent-cyan); text-shadow: var(--glow-cyan); }
+  .cta-sub {
+    color: var(--text-secondary);
+    font-size: 1rem;
+    max-width: 500px;
+    margin: 0 auto 48px;
+    line-height: 1.8;
+  }
+  .cta-actions {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    background: var(--bg-panel);
+    border-top: 1px solid var(--border-subtle);
+    padding: 48px 5% 32px;
+    position: relative;
+    z-index: 1;
+  }
+  .footer-top {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr 1fr;
+    gap: 48px;
+    margin-bottom: 48px;
+  }
+  .footer-brand {}
+  .footer-logo {
+    font-family: var(--font-mono);
+    font-size: 1rem;
+    color: var(--accent-cyan);
+    text-shadow: var(--glow-cyan);
+    letter-spacing: 0.15em;
+    margin-bottom: 12px;
+  }
+  .footer-tagline {
+    font-size: 0.83rem;
+    color: var(--text-dim);
+    line-height: 1.7;
+    max-width: 220px;
+  }
+  .footer-col h4 {
+    font-family: var(--font-display);
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-primary);
+    margin-bottom: 16px;
+  }
+  .footer-col ul { list-style: none; }
+  .footer-col ul li {
+    font-size: 0.83rem;
+    color: var(--text-dim);
+    padding: 4px 0;
+    transition: color 0.2s;
+    cursor: pointer;
+  }
+  .footer-col ul li:hover { color: var(--accent-cyan); }
+  .footer-bottom {
+    border-top: 1px solid var(--border-subtle);
+    padding-top: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .footer-copy {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+  }
+  .footer-badges {
+    display: flex;
+    gap: 12px;
+  }
+  .footer-badge {
+    font-family: var(--font-mono);
+    font-size: 0.58rem;
+    color: var(--text-dim);
+    border: 1px solid var(--border-subtle);
+    padding: 4px 10px;
+    letter-spacing: 0.1em;
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  .reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .reveal.visible {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* ── DIVIDER ── */
+  .hex-divider {
+    text-align: center;
+    padding: 24px 0;
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    letter-spacing: 0.3em;
+    position: relative;
+    z-index: 1;
+  }
+
+  @media (max-width: 900px) {
+    .pipeline-grid { grid-template-columns: 1fr 1fr; }
+    .threats-grid { grid-template-columns: 1fr 1fr; }
+    .tech-row { grid-template-columns: repeat(4, 1fr); }
+    .arch-layout { grid-template-columns: 1fr; }
+    .metrics-layout { grid-template-columns: 1fr; }
+    .feed-layout { grid-template-columns: 1fr; }
+    .stats-strip { grid-template-columns: repeat(2, 1fr); }
+    .team-grid { grid-template-columns: 1fr 1fr; }
+    .footer-top { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 600px) {
+    .pipeline-grid, .threats-grid, .team-grid, .tech-row { grid-template-columns: 1fr; }
+    .stats-strip { grid-template-columns: 1fr 1fr; }
+    .footer-top { grid-template-columns: 1fr; }
+    nav { padding: 0 4%; }
+    .nav-links { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="grid-bg"></div>
+<div class="scanline"></div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">
+    <span class="bracket">[</span>
+    LOGSENTINEL
+    <span class="bracket">]</span>
+  </div>
+  <ul class="nav-links">
+    <li><a href="#pipeline">Pipeline</a></li>
+    <li><a href="#architecture">Architecture</a></li>
+    <li><a href="#threats">Threats</a></li>
+    <li><a href="#metrics">Metrics</a></li>
+    <li><a href="#team">Team</a></li>
+  </ul>
+  <button class="nav-cta">View Report</button>
+</nav>
+
+<main>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg-orbs">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <div class="hero-tag">
+    <div class="status-dot"></div>
+    System Active &nbsp;·&nbsp; Threat Intelligence Online &nbsp;·&nbsp; AY25BECS
+  </div>
+
+  <h1 class="hero-title">
+    <span class="dim">Log Analysis</span>
+    <span class="accent">For Cyber</span>
+    <span>Threat Detection</span>
+  </h1>
+
+  <p class="hero-sub">
+    An AI-driven framework that ingests millions of system logs, labels anomalies through SIEM rulesets, and deploys a Deep Neural Network to detect cyberattacks in real time — before damage occurs.
+  </p>
+<div class="hero-actions">
+  <button class="btn-primary" onclick="window.location.href='/dashboard'">
+    Explore System
+  </button>
+
+  <button class="btn-outline">
+    View Architecture
+  </button>
+</div>
+
+  <!-- Terminal -->
+  <div class="hero-terminal">
+    <div class="term-header">
+      <div class="term-dot td-r"></div>
+      <div class="term-dot td-y"></div>
+      <div class="term-dot td-g"></div>
+      <span class="term-title">logsentinel — threat_monitor.py</span>
+    </div>
+    <div class="term-body" id="termBody">
+      <div class="term-line"><span class="term-prompt">$</span><span class="term-cmd">python3 threat_monitor.py --live</span></div>
+      <div class="term-out">[INFO] Connecting to Elasticsearch cluster...</div>
+      <div class="term-out">[INFO] Loading DNN model weights...</div>
+      <div class="term-ok">[OK]&nbsp;&nbsp; Model loaded — 4 hidden layers, 256 neurons</div>
+      <div class="term-out">[INFO] Monitoring log stream from 3 VMs...</div>
+      <div class="term-warn">[WARN] Unusual login frequency: 10.0.0.42</div>
+      <div class="term-alert">[ALERT] Brute-force detected — 192.168.1.105</div>
+      <div class="term-ok">[OK]&nbsp;&nbsp; Event blocked & logged to MongoDB</div>
+      <div class="term-out">[INFO] SIEM rule triggered: AUTH_FAIL_THRESHOLD</div>
+      <div class="term-warn">[WARN] Port scan detected: 172.16.0.88</div>
+      <div class="term-out">[INFO] Processing 1,842 log entries...</div>
+      <div class="term-ok">[OK]&nbsp;&nbsp; Accuracy: 97.4% &nbsp;|&nbsp; F1: 0.963</div>
+      <div class="term-line"><span class="term-prompt">$</span><span class="cursor"></span></div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS STRIP -->
+<div class="stats-strip">
+  <div class="stat-item reveal">
+    <span class="stat-num" data-target="97">0</span>
+    <div class="stat-label">Detection Accuracy %</div>
+  </div>
+  <div class="stat-item reveal">
+    <span class="stat-num" data-target="8">0</span>
+    <div class="stat-label">Attack Types Identified</div>
+  </div>
+  <div class="stat-item reveal">
+    <span class="stat-num" data-target="4">0</span>
+    <div class="stat-label">Pipeline Layers</div>
+  </div>
+  <div class="stat-item reveal">
+    <span class="stat-num" data-target="3">0</span>
+    <div class="stat-label">Team Members</div>
+  </div>
+</div>
+
+<div class="hex-divider">◈ ─────────── ◈ ─────────── ◈</div>
+
+<!-- PIPELINE -->
+<section class="pipeline" id="pipeline">
+  <div class="section-tag">How It Works</div>
+  <h2 class="section-title reveal">Four-Layer<br>Detection Pipeline</h2>
+  <p class="section-desc reveal">Raw logs flow through a sequential architecture — from VM simulation to AI classification — ensuring no threat slips through undetected.</p>
+
+  <div class="pipeline-grid">
+    <div class="pipeline-step reveal">
+      <div class="step-num">LAYER 01</div>
+      <div class="step-icon">🖥️</div>
+      <div class="step-title">Data Collection & Preprocessing</div>
+      <div class="step-desc">Event logs generated from AMIDES & SOCBED across Ubuntu and Windows VMs, distributed and collected via Ansible automation. Python scripts clean, normalize, and encode log data.</div>
+      <div class="step-tools">
+        <span class="tool-badge">AMIDES</span>
+        <span class="tool-badge">SOCBED</span>
+        <span class="tool-badge">Ansible</span>
+        <span class="tool-badge">Python</span>
+      </div>
+    </div>
+    <div class="pipeline-step reveal">
+      <div class="step-num">LAYER 02</div>
+      <div class="step-icon">🗄️</div>
+      <div class="step-title">Storage & Labelling</div>
+      <div class="step-desc">Preprocessed logs stored in MongoDB (training) and Elasticsearch (testing). Static SIEM rulesets label each entry as benign or malicious before feeding the AI model.</div>
+      <div class="step-tools">
+        <span class="tool-badge">MongoDB</span>
+        <span class="tool-badge">Elasticsearch</span>
+        <span class="tool-badge">SIEM Rules</span>
+      </div>
+    </div>
+    <div class="pipeline-step reveal">
+      <div class="step-num">LAYER 03</div>
+      <div class="step-icon">🧠</div>
+      <div class="step-title">Deep Learning Model</div>
+      <div class="step-desc">A Deep Neural Network (DNN) with multiple hidden layers learns attack patterns from labeled data. Adam optimizer and Cross-Entropy loss drive accuracy across epochs.</div>
+      <div class="step-tools">
+        <span class="tool-badge">DNN</span>
+        <span class="tool-badge">TensorFlow</span>
+        <span class="tool-badge">Keras</span>
+        <span class="tool-badge">ReLU / Softmax</span>
+      </div>
+    </div>
+    <div class="pipeline-step reveal">
+      <div class="step-num">LAYER 04</div>
+      <div class="step-icon">📡</div>
+      <div class="step-title">Testing, Visualization & Alerting</div>
+      <div class="step-desc">Trained model classifies live logs from Elasticsearch. Results feed back into SIEM for correlation. A ReactJS + TailwindCSS GUI displays real-time threats with automated alerts.</div>
+      <div class="step-tools">
+        <span class="tool-badge">ReactJS</span>
+        <span class="tool-badge">Kibana</span>
+        <span class="tool-badge">TailwindCSS</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="hex-divider">◈ ─────────── ◈ ─────────── ◈</div>
+
+<!-- ARCHITECTURE -->
+<section id="architecture">
+  <div class="section-tag">System Design</div>
+  <h2 class="section-title reveal">System Architecture</h2>
+  <p class="section-desc reveal">A layered, modular architecture connecting virtualized environments to an AI detection engine through automated pipelines.</p>
+
+  <div class="arch-layout">
+    <div class="arch-diagram reveal">
+      <div class="arch-node">
+        <div class="arch-node-icon">🖥️</div>
+        <div class="arch-node-text">
+          <div class="arch-node-name">Windows 10 VM</div>
+          <div class="arch-node-sub">Log Source — 22H2</div>
+        </div>
+      </div>
+      <div class="arch-connector"></div>
+      <div class="arch-node highlighted">
+        <div class="arch-node-icon">⚙️</div>
+        <div class="arch-node-text">
+          <div class="arch-node-name">Ansible Controller</div>
+          <div class="arch-node-sub">Automated Orchestration</div>
+        </div>
+      </div>
+      <div class="arch-connector"></div>
+      <div class="arch-node">
+        <div class="arch-node-icon">🐧</div>
+        <div class="arch-node-text">
+          <div class="arch-node-name">Ubuntu 24.04 VM</div>
+          <div class="arch-node-sub">Log Source — Noble Numbat</div>
+        </div>
+      </div>
+      <div class="arch-connector"></div>
+      <div class="arch-node">
+        <div class="arch-node-icon">🔬</div>
+        <div class="arch-node-text">
+          <div class="arch-node-name">AMIDES & SOCBED</div>
+          <div class="arch-node-sub">Log Generator / Simulator</div>
+        </div>
+      </div>
+      <div class="arch-connector"></div>
+      <div class="arch-node">
+        <div class="arch-node-icon">🛡️</div>
+        <div class="arch-node-text">
+          <div class="arch-node-name">SIEM Processing Core</div>
+          <div class="arch-node-sub">Rule-Based Labeling</div>
+        </div>
+      </div>
+      <div class="arch-connector"></div>
+      <div class="arch-node">
+        <div class="arch-node-icon">⚡</div>
+        <div class="arch-node-text">
+          <div class="arch-node-name">Logstash → Elasticsearch</div>
+          <div class="arch-node-sub">Data Parsing & Cluster Indexing</div>
+        </div>
+      </div>
+      <div class="arch-connector"></div>
+      <div class="arch-node highlighted">
+        <div class="arch-node-icon">🧠</div>
+        <div class="arch-node-text">
+          <div class="arch-node-name">Deep Neural Network</div>
+          <div class="arch-node-sub">AI Classification Engine</div>
+        </div>
+      </div>
+      <div class="arch-connector"></div>
+      <div class="arch-node alert">
+        <div class="arch-node-icon">🚨</div>
+        <div class="arch-node-text">
+          <div class="arch-node-name">AI Detection Engine</div>
+          <div class="arch-node-sub">Real-Time Alerting & GUI</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="arch-specs reveal">
+      <div class="spec-item">
+        <div class="spec-label">Layer 1</div>
+        <div class="spec-title">Virtualized Log Environments</div>
+        <div class="spec-desc">Multi-OS VMs simulate realistic enterprise network conditions, generating both benign and attack event logs for diverse dataset creation.</div>
+      </div>
+      <div class="spec-item">
+        <div class="spec-label">Layer 2</div>
+        <div class="spec-title">Hybrid Storage Strategy</div>
+        <div class="spec-desc">MongoDB stores labeled training datasets with flexible schema; Elasticsearch enables millisecond-speed querying of live log streams during inference.</div>
+      </div>
+      <div class="spec-item">
+        <div class="spec-label">Layer 3</div>
+        <div class="spec-title">Adaptive Neural Network</div>
+        <div class="spec-desc">DNN with input, hidden, and output layers optimized with Adam gradient descent. Continuously retrained on new threat data to counter evolving attacks including zero-day exploits.</div>
+      </div>
+      <div class="spec-item">
+        <div class="spec-label">Layer 4</div>
+        <div class="spec-title">Visualization & Response</div>
+        <div class="spec-desc">Kibana dashboards and a custom React GUI expose real-time threat maps, alert histories, and performance metrics. Automated alerts reduce MTTD/MTTR dramatically.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="hex-divider">◈ ─────────── ◈ ─────────── ◈</div>
+
+<!-- THREAT TYPES -->
+<section class="threats-bg" id="threats">
+  <div class="section-tag">Threat Intelligence</div>
+  <h2 class="section-title reveal">Detected Threat Vectors</h2>
+  <p class="section-desc reveal">The DNN model is trained to identify a wide spectrum of attack patterns — from high-frequency brute-force attempts to subtle long-term data exfiltration campaigns.</p>
+
+  <div class="threats-grid">
+    <div class="threat-card reveal">
+      <div class="threat-severity sev-critical">CRITICAL</div>
+      <div class="threat-icon">💥</div>
+      <div class="threat-name">Brute-Force Login</div>
+      <div class="threat-desc">Rapid repeated authentication failures from a single IP. Detected via login frequency thresholds and temporal clustering in SIEM rules.</div>
+      <div class="threat-bar"><div class="threat-bar-fill red" data-width="94"></div></div>
+    </div>
+    <div class="threat-card reveal">
+      <div class="threat-severity sev-critical">CRITICAL</div>
+      <div class="threat-icon">🦠</div>
+      <div class="threat-name">Malware Infiltration</div>
+      <div class="threat-desc">Suspicious process spawning and file system modifications flagged through behavioral anomaly detection in the DNN model.</div>
+      <div class="threat-bar"><div class="threat-bar-fill red" data-width="89"></div></div>
+    </div>
+    <div class="threat-card reveal">
+      <div class="threat-severity sev-high">HIGH</div>
+      <div class="threat-icon">📤</div>
+      <div class="threat-name">Data Exfiltration</div>
+      <div class="threat-desc">Unusual outbound data transfer volumes and access to restricted files from unauthorized hosts indicate active data theft.</div>
+      <div class="threat-bar"><div class="threat-bar-fill amber" data-width="82"></div></div>
+    </div>
+    <div class="threat-card reveal">
+      <div class="threat-severity sev-high">HIGH</div>
+      <div class="threat-icon">🎣</div>
+      <div class="threat-name">Phishing Activity</div>
+      <div class="threat-desc">Fake URL and domain-based attack patterns identified through log correlation with known phishing indicators and network traffic analysis.</div>
+      <div class="threat-bar"><div class="threat-bar-fill amber" data-width="76"></div></div>
+    </div>
+    <div class="threat-card reveal">
+      <div class="threat-severity sev-high">HIGH</div>
+      <div class="threat-icon">🔍</div>
+      <div class="threat-name">Network Reconnaissance</div>
+      <div class="threat-desc">Port enumeration and scanning activities detected through unusual connection patterns and high-frequency SYN packets across subnets.</div>
+      <div class="threat-bar"><div class="threat-bar-fill amber" data-width="79"></div></div>
+    </div>
+    <div class="threat-card reveal">
+      <div class="threat-severity sev-medium">MEDIUM</div>
+      <div class="threat-icon">🔐</div>
+      <div class="threat-name">Privilege Escalation</div>
+      <div class="threat-desc">Unauthorized attempts to gain elevated system access detected via user behavior anomaly modeling and access control log patterns.</div>
+      <div class="threat-bar"><div class="threat-bar-fill" data-width="71"></div></div>
+    </div>
+  </div>
+</section>
+
+<div class="hex-divider">◈ ─────────── ◈ ─────────── ◈</div>
+
+<!-- TECH STACK -->
+<section>
+  <div class="section-tag">Technology Stack</div>
+  <h2 class="section-title reveal">Built With<br>Industry-Grade Tools</h2>
+
+  <div class="tech-row">
+    <div class="tech-item reveal">
+      <span class="tech-logo">🐍</span>
+      <div class="tech-name">Python</div>
+      <div class="tech-role">Core Processing & ML</div>
+    </div>
+    <div class="tech-item reveal">
+      <span class="tech-logo">⚡</span>
+      <div class="tech-name">Elasticsearch</div>
+      <div class="tech-role">Log Indexing & Search</div>
+    </div>
+    <div class="tech-item reveal">
+      <span class="tech-logo">🗃️</span>
+      <div class="tech-name">MongoDB</div>
+      <div class="tech-role">Training Data Storage</div>
+    </div>
+    <div class="tech-item reveal">
+      <span class="tech-logo">📊</span>
+      <div class="tech-name">Kibana</div>
+      <div class="tech-role">Visualization Dashboard</div>
+    </div>
+    <div class="tech-item reveal">
+      <span class="tech-logo">⚙️</span>
+      <div class="tech-name">Ansible</div>
+      <div class="tech-role">Automation & Orchestration</div>
+    </div>
+    <div class="tech-item reveal">
+      <span class="tech-logo">🧠</span>
+      <div class="tech-name">TensorFlow</div>
+      <div class="tech-role">DNN Model Training</div>
+    </div>
+    <div class="tech-item reveal">
+      <span class="tech-logo">⚛️</span>
+      <div class="tech-name">React + Tailwind</div>
+      <div class="tech-role">GUI Dashboard</div>
+    </div>
+    <div class="tech-item reveal">
+      <span class="tech-logo">🛡️</span>
+      <div class="tech-name">SIEM Engine</div>
+      <div class="tech-role">Rule-Based Detection</div>
+    </div>
+  </div>
+</section>
+
+<div class="hex-divider">◈ ─────────── ◈ ─────────── ◈</div>
+
+<!-- METRICS -->
+<section id="metrics">
+  <div class="metrics-layout">
+    <div class="metrics-chart reveal">
+      <div class="section-tag">Performance Metrics</div>
+      <h2 class="section-title">Expected<br>Model Performance</h2>
+
+      <div class="metric-row">
+        <div class="metric-header">
+          <span class="metric-name">Detection Accuracy</span>
+          <span class="metric-val" id="m1">97.4%</span>
+        </div>
+        <div class="metric-track"><div class="metric-fill" data-width="97"></div></div>
+      </div>
+      <div class="metric-row">
+        <div class="metric-header">
+          <span class="metric-name">Precision</span>
+          <span class="metric-val">96.1%</span>
+        </div>
+        <div class="metric-track"><div class="metric-fill" data-width="96"></div></div>
+      </div>
+      <div class="metric-row">
+        <div class="metric-header">
+          <span class="metric-name">Recall</span>
+          <span class="metric-val">95.8%</span>
+        </div>
+        <div class="metric-track"><div class="metric-fill" data-width="96"></div></div>
+      </div>
+      <div class="metric-row">
+        <div class="metric-header">
+          <span class="metric-name">F1 Score</span>
+          <span class="metric-val">0.963</span>
+        </div>
+        <div class="metric-track"><div class="metric-fill" data-width="96"></div></div>
+      </div>
+      <div class="metric-row">
+        <div class="metric-header">
+          <span class="metric-name">False Positive Reduction</span>
+          <span class="metric-val">~68% vs SIEM</span>
+        </div>
+        <div class="metric-track"><div class="metric-fill" data-width="68"></div></div>
+      </div>
+    </div>
+
+    <div class="metrics-text reveal">
+      <div class="section-tag">Key Outcomes</div>
+      <h2 class="section-title">Why AI<br>Changes Everything</h2>
+      <p class="section-desc">Traditional SIEM systems rely on static rules — they miss zero-day attacks and generate excessive false alarms. The DNN learns non-linear, complex patterns that rule engines simply cannot express.</p>
+      <div class="metrics-callout">
+        <div class="callout-label">Adaptive Learning</div>
+        <div class="callout-text">The model continuously retrains on new log data from AMIDES/SOCBED and live SIEM outputs — maintaining high accuracy as attack patterns evolve over time.</div>
+      </div>
+      <div class="metrics-callout" style="margin-top:12px;">
+        <div class="callout-label">Real-Time Response</div>
+        <div class="callout-text">From log ingestion to alert generation happens in seconds. Automated alerting drastically reduces Mean Time to Detect (MTTD) and Mean Time to Respond (MTTR).</div>
+      </div>
+    </div>
+  </div>
+  
+</section>
+
+<div class="hex-divider">◈ ─────────── ◈ ─────────── ◈</div>
+
+<!-- LIVE FEED -->
+<section class="feed-bg">
+  <div class="section-tag">Live System</div>
+  <h2 class="section-title reveal">Simulated Alert Feed</h2>
+  <p class="section-desc reveal">Live event stream as the system monitors network log entries and classifies each event in real time.</p>
+
+  <div class="feed-layout">
+    <div class="feed-panel reveal">
+      <div class="feed-header">
+        <span class="feed-title">SYSTEM_MONITOR — LIVE_FEED.LOG</span>
+        <span class="feed-live"><div class="status-dot"></div> LIVE</span>
+      </div>
+      <div class="feed-body" id="liveFeed"></div>
+    </div>
+
+    <div class="feed-stats reveal">
+      <div class="fstat">
+        <span class="fstat-num red" id="cntBlock">0</span>
+        <div class="fstat-label">Threats Blocked</div>
+      </div>
+      <div class="fstat">
+        <span class="fstat-num amber" id="cntWarn">0</span>
+        <div class="fstat-label">Warnings Issued</div>
+      </div>
+      <div class="fstat">
+        <span class="fstat-num green" id="cntOk">0</span>
+        <div class="fstat-label">Clean Events</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="hex-divider">◈ ─────────── ◈ ─────────── ◈</div>
+
+<!-- TEAM -->
+<section id="team">
+  <div class="section-tag">Project Team</div>
+  <h2 class="section-title reveal">The Builders</h2>
+  <p class="section-desc reveal">Bachelor of Engineering, Computer Engineering — Shree L.R. Tiwari College of Engineering, University of Mumbai, AY 2025-26.</p>
+
+  <div class="team-grid">
+    <div class="team-card reveal">
+      <div class="team-avatar">👩‍💻</div>
+      <div class="team-name">Sneha Singh</div>
+      <div class="team-roll">Roll No. 34 &nbsp;|&nbsp; CML710</div>
+      <div class="team-desc">Core contributor to data pipeline design, SIEM integration, and frontend visualization module using React and TailwindCSS.</div>
+    </div>
+    <div class="team-card reveal">
+      <div class="team-avatar">👨‍💻</div>
+      <div class="team-name">Nikhil Sharma</div>
+      <div class="team-roll">Roll No. 20 &nbsp;|&nbsp; CML710</div>
+      <div class="team-desc">Responsible for Ansible automation, VM environment setup, and Elasticsearch configuration for log management and real-time querying.</div>
+    </div>
+    <div class="team-card reveal">
+      <div class="team-avatar">👨‍🔬</div>
+      <div class="team-name">Nikhil Singh</div>
+      <div class="team-roll">Roll No. 30 &nbsp;|&nbsp; CML710</div>
+      <div class="team-desc">Led Deep Neural Network architecture design, model training pipeline, feature extraction, and performance evaluation using TensorFlow/Keras.</div>
+    </div>
+  </div>
+
+  <div style="text-align:center; margin-top:48px;" class="reveal">
+    <div style="font-family:var(--font-mono);font-size:0.7rem;color:var(--text-dim);letter-spacing:0.15em;margin-bottom:8px;">SUPERVISOR</div>
+    <div style="font-family:var(--font-display);font-size:1.4rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--accent-cyan);text-shadow:var(--glow-cyan);">Mr. Rajesh Gaikwad</div>
+    <div style="font-family:var(--font-mono);font-size:0.7rem;color:var(--text-dim);margin-top:6px;letter-spacing:0.1em;">Associate Professor — Dept. of Computer Engineering</div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <div class="cta-badge">Major Project — AY25BECS</div>
+  <h2 class="cta-title">The Future of<br>Cybersecurity is <span>Autonomous</span></h2>
+  <p class="cta-sub">Log-based AI threat detection isn't just an academic concept — it's the architecture that will power the next generation of enterprise security operations centers.</p>
+  <div class="cta-actions">
+    <button class="btn-primary">Read Full Report</button>
+    <button class="btn-outline">View Source Code</button>
+  </div>
+</section>
+
+</main>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-top">
+    <div class="footer-brand">
+      <div class="footer-logo">[ LOGSENTINEL AI ]</div>
+      <div class="footer-tagline">AI-driven log analysis for real-time cyber threat detection. Built for the next generation of security operations.</div>
+    </div>
+    <div class="footer-col">
+      <h4>System</h4>
+      <ul>
+        <li>Detection Pipeline</li>
+        <li>DNN Architecture</li>
+        <li>SIEM Integration</li>
+        <li>Alert Engine</li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Technology</h4>
+      <ul>
+        <li>Elasticsearch / ELK</li>
+        <li>MongoDB</li>
+        <li>Ansible Automation</li>
+        <li>TensorFlow / Keras</li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Project</h4>
+      <ul>
+        <li>Abstract</li>
+        <li>Literature Review</li>
+        <li>Methodology</li>
+        <li>References</li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <div class="footer-copy">© 2025-26 AY25BECS · Shree L.R. Tiwari College of Engineering · University of Mumbai</div>
+    <div class="footer-badges">
+      <span class="footer-badge">AICTE APPROVED</span>
+      <span class="footer-badge">NAAC ACCREDITED</span>
+      <span class="footer-badge">ISO 9001:2015</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+// ── INTERSECTION OBSERVER (reveal + metric fills + counter) ──
+const reveals = document.querySelectorAll('.reveal');
+const obs = new IntersectionObserver((entries) => {
+  entries.forEach((e, i) => {
+    if (e.isIntersecting) {
+      setTimeout(() => e.target.classList.add('visible'), i * 80);
+      obs.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.1 });
+reveals.forEach(el => obs.observe(el));
+
+// Metric bar fills
+const metricObs = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.querySelectorAll('.metric-fill').forEach(fill => {
+        fill.style.width = fill.dataset.width + '%';
+      });
+      metricObs.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.3 });
+document.querySelectorAll('.metrics-layout').forEach(el => metricObs.observe(el));
+
+// Threat bar fills
+const threatObs = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.querySelectorAll('.threat-bar-fill').forEach(fill => {
+        setTimeout(() => fill.style.width = fill.dataset.width + '%', 200);
+      });
+      threatObs.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.2 });
+document.querySelectorAll('.threats-grid').forEach(el => threatObs.observe(el));
+
+// Counter animation
+const counterObs = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.querySelectorAll('[data-target]').forEach(el => {
+        const target = parseInt(el.dataset.target);
+        let current = 0;
+        const step = Math.max(1, Math.floor(target / 30));
+        const timer = setInterval(() => {
+          current = Math.min(current + step, target);
+          el.textContent = current + (target > 10 ? '%' : '');
+          if (current >= target) clearInterval(timer);
+        }, 40);
+      });
+      counterObs.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.5 });
+document.querySelectorAll('.stats-strip').forEach(el => counterObs.observe(el));
+
+// ── LIVE FEED SIMULATION ──
+const events = [
+  { event: 'AUTH_FAIL x12', ip: '192.168.1.105', status: 'BLOCKED', cls: 'fs-block' },
+  { event: 'PORT_SCAN detected', ip: '172.16.0.88', status: 'ALERT', cls: 'fs-alert' },
+  { event: 'Normal SSH login', ip: '10.0.0.12', status: 'OK', cls: 'fs-ok' },
+  { event: 'DNS lookup ok', ip: '10.0.0.5', status: 'OK', cls: 'fs-ok' },
+  { event: 'BRUTE_FORCE attempt', ip: '203.0.113.42', status: 'BLOCKED', cls: 'fs-block' },
+  { event: 'HTTP 200 batch', ip: '10.0.0.44', status: 'OK', cls: 'fs-ok' },
+  { event: 'EXFIL pattern match', ip: '198.51.100.7', status: 'ALERT', cls: 'fs-alert' },
+  { event: 'PRIV_ESC attempt', ip: '10.0.0.22', status: 'BLOCKED', cls: 'fs-block' },
+  { event: 'SYN flood (200 pkt/s)', ip: '45.33.32.156', status: 'BLOCKED', cls: 'fs-block' },
+  { event: 'Normal file access', ip: '10.0.0.9', status: 'OK', cls: 'fs-ok' },
+  { event: 'Phishing URL flag', ip: '192.0.2.99', status: 'ALERT', cls: 'fs-alert' },
+  { event: 'Log rotation OK', ip: '10.0.0.1', status: 'OK', cls: 'fs-ok' },
+];
+
+let feedIdx = 0, blocks = 0, warns = 0, oks = 0;
+const feedEl = document.getElementById('liveFeed');
+const cntBlock = document.getElementById('cntBlock');
+const cntWarn = document.getElementById('cntWarn');
+const cntOk = document.getElementById('cntOk');
+
+function getTime() {
+  const n = new Date();
+  return [n.getHours(), n.getMinutes(), n.getSeconds()].map(x => String(x).padStart(2,'0')).join(':');
+}
+
+function addFeedEntry() {
+  const ev = events[feedIdx % events.length];
+  feedIdx++;
+  const row = document.createElement('div');
+  row.className = 'feed-entry';
+  row.innerHTML = `
+    <span class="feed-time">${getTime()}</span>
+    <span class="feed-event">${ev.event}</span>
+    <span class="feed-ip">${ev.ip}</span>
+    <span class="feed-status ${ev.cls}">${ev.status}</span>
+  `;
+  feedEl.insertBefore(row, feedEl.firstChild);
+  if (feedEl.children.length > 12) feedEl.removeChild(feedEl.lastChild);
+
+  if (ev.cls === 'fs-block') cntBlock.textContent = ++blocks;
+  else if (ev.cls === 'fs-alert') cntWarn.textContent = ++warns;
+  else cntOk.textContent = ++oks;
+}
+
+// seed with a few entries
+for (let i = 0; i < 8; i++) addFeedEntry();
+setInterval(addFeedEntry, 1800);
+</script>
+</body>
+</html>
