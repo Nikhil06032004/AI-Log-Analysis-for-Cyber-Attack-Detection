@@ -1,0 +1,52 @@
+{
+    "estimator": "SVC",
+    "estimator_params": {
+        "C": 0.9102981779915218,
+        "break_ties": false,
+        "cache_size": 2000,
+        "class_weight": null,
+        "coef0": 0.0,
+        "decision_function_shape": "ovr",
+        "degree": 3,
+        "gamma": "scale",
+        "kernel": "linear",
+        "max_iter": -1,
+        "probability": false,
+        "random_state": null,
+        "shrinking": true,
+        "tol": 0.001,
+        "verbose": false
+    },
+    "data": {
+        "train_data": {
+            "shape": [
+                658,
+                686
+            ],
+            "feature_info": [],
+            "class_info": {
+                "num_positive_samples": 249,
+                "num_negative_samples": 409,
+                "positive_negative_ratio": 0.60880195599022
+            }
+        },
+        "test_data": null,
+        "valid_data": null,
+        "name": "ttv_split"
+    },
+    "tainted_share": 0.0,
+    "tainted_seed": 0,
+    "scaler": {
+        "type": "MinMaxScaler",
+        "data_min": -1.189366768929123,
+        "data_max": 1.189366768929123,
+        "range": 2.378733537858246,
+        "scale": 0.420391769016876,
+        "min": 0.5
+    },
+    "feature_extractors": [
+        "TfidfVectorizer"
+    ],
+    "name": "misuse_svc_rules_f1_0",
+    "timestamp": ""
+}
