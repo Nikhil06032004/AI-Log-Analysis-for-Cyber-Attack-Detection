@@ -1,0 +1,184 @@
+/* ═══════════════════════════════════════════════
+   Sidebar
+   ═══════════════════════════════════════════════ */
+
+.sidebar {
+  flex-shrink: 0 !important;
+  width: 240px;
+  overflow: hidden;
+  transition: width 0.25s ease;
+  background: #08152a;
+  border-right: 1px solid #1a3a5c;
+  display: flex;
+  flex-direction: column;
+  align-self: stretch;
+  box-sizing: border-box;
+}
+
+.sidebar.closed {
+  width: 0;
+  border-right: none;
+}
+
+.sidebar-inner {
+  width: 240px;
+  min-width: 240px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+/* ── section label ─────────────────────── */
+.sidebar-section-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #2a5070;
+  padding: 20px 18px 8px;
+}
+
+/* ── nav ────────────────────────────────── */
+.sidebar-nav {
+  padding: 4px 10px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.sidebar-nav-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  color: #6aa3c8;
+  background: transparent;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  user-select: none;
+  white-space: nowrap;
+  text-align: left;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.sidebar-nav-item:hover {
+  background: rgba(0, 217, 255, 0.07) !important;
+  color: #c8e8f8 !important;
+  border-color: rgba(0, 217, 255, 0.12) !important;
+}
+
+.sidebar-nav-item.active {
+  background: rgba(0, 217, 255, 0.12);
+  border-color: rgba(0, 217, 255, 0.3);
+  color: #00d9ff;
+}
+
+.sidebar-nav-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sidebar-nav-icon {
+  font-size: 15px;
+  width: 20px;
+  text-align: center;
+  flex-shrink: 0;
+  display: inline-block;
+  opacity: 0.85;
+}
+
+.sidebar-nav-item.active .sidebar-nav-icon {
+  opacity: 1;
+}
+
+.sidebar-nav-label {
+  font-size: 13.5px;
+  font-weight: 400;
+  font-family: 'Inter', sans-serif;
+  letter-spacing: 0.01em;
+}
+
+.sidebar-nav-label.active {
+  font-weight: 600;
+}
+
+.sidebar-badge {
+  min-width: 20px;
+  height: 20px;
+  border-radius: 10px;
+  background: #ff4569;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+  flex-shrink: 0;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ── divider ────────────────────────────── */
+.sidebar-divider {
+  height: 1px;
+  background: #1a3a5c;
+  margin: 10px 14px;
+  opacity: 0.5;
+}
+
+/* ── DNN card ───────────────────────────── */
+.sidebar-dnn {
+  margin: auto 12px 18px;
+  padding: 16px 18px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #0d1f38 0%, #0a1828 100%);
+  border: 1px solid #1a3a5c;
+}
+
+.sidebar-dnn-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #2a5878;
+  margin-bottom: 6px;
+}
+
+.sidebar-dnn-version {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  font-weight: 700;
+  color: #00d9ff;
+  margin-bottom: 12px;
+}
+
+.sidebar-dnn-bar-bg {
+  height: 5px;
+  background: #06101e;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.sidebar-dnn-bar-fill {
+  width: 96%;
+  height: 100%;
+  background: linear-gradient(90deg, #00d9ff, #c084fc);
+  border-radius: 3px;
+}
+
+.sidebar-dnn-stats {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: #3a6a8a;
+  letter-spacing: 0.04em;
+}

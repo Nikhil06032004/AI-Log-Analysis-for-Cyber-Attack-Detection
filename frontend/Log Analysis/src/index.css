@@ -51,14 +51,14 @@
 }
 
 #root {
-  width: 1126px;
+  /* reset Vite template defaults — layout is handled via position:fixed inline */
+  width: 100%;
   max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
+  margin: 0;
+  text-align: left;
+  border-inline: none;
+  min-height: 100%;
+  display: block;
   box-sizing: border-box;
 }
 

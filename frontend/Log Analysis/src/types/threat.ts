@@ -1,7 +1,2 @@
-import axios from "axios";
-
-const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL
-});
-
-export default API;
+// This file is intentionally empty.
+// All shared types are exported from ./index.ts
