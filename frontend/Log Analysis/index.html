@@ -4,6 +4,9 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>LogSentinel AI — Cyber Threat Detection</title>
+<!-- Route-based visibility — runs synchronously before any HTML renders -->
+<style>.dash #landing-page{display:none!important}.dash #root{display:block!important}</style>
+<script>if(window.location.pathname.startsWith('/dashboard'))document.documentElement.classList.add('dash');</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&family=Exo+2:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
 <style>
@@ -1085,6 +1088,7 @@
 </head>
 <body>
 
+<div id="landing-page">
 <div class="grid-bg"></div>
 <div class="scanline"></div>
 
@@ -1748,5 +1752,10 @@ function addFeedEntry() {
 for (let i = 0; i < 8; i++) addFeedEntry();
 setInterval(addFeedEntry, 1800);
 </script>
+
+</div><!-- #landing-page -->
+
+<div id="root" style="display:none;position:fixed;inset:0;z-index:100;overflow:hidden;"></div>
+<script type="module" src="/src/main.tsx"></script>
 </body>
 </html>
