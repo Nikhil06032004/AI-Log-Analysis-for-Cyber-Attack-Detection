@@ -145,18 +145,21 @@ def main():
 
     if not all_lines:
         print("  [ERROR] No training data available.")
-        print("  Provide at least one of:")
-        print("    - ml_engine/model/ (SOCBED folders)")
-        print("    - data/KDDTrain+.csv (NSL-KDD)")
         sys.exit(1)
 
     dist = Counter(all_labels)
     print(f"  Total samples : {len(all_lines)}")
     print(f"  {'Class':<20} {'Count':>8}  {'%':>6}")
     print(f"  {'-'*38}")
+
     for cls in sorted(dist):
         pct = dist[cls] / len(all_labels) * 100
         print(f"  {cls:<20} {dist[cls]:>8}  {pct:>5.1f}%")
+
+
+    
+
+    # ============================================================
 
     # -- Step 4: Train ---------------------------------------------------------
     print_section("Step 4 -- Training UpgradedAMIDES")

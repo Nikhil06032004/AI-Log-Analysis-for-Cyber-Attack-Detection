@@ -260,8 +260,12 @@ def main():
     _section("1 -- Model Parameters")
 
     xgb_p   = model.xgb.get_params()
-    tfidf_p = model.tfidf.get_params()
-    n_tfidf = len(model.tfidf.vocabulary_) if hasattr(model.tfidf, 'vocabulary_') else tfidf_p.get("max_features", "?")
+    word_p = model.word_tfidf.get_params()
+    char_p = model.char_tfidf.get_params()
+    n_tfidf = (
+    len(model.word_tfidf.vocabulary_) +
+    len(model.char_tfidf.vocabulary_)
+)
 
     print(f"\n  {BOLD}XGBoost{RESET}")
     xgb_show = [
@@ -279,23 +283,15 @@ def main():
     for k, v in xgb_show:
         print(f"    {CYAN}{k:<22}{RESET} {v}")
 
-    print(f"\n  {BOLD}TF-IDF Vectorizer{RESET}")
-    tfidf_show = [
-        ("analyzer",       tfidf_p.get("analyzer")),
-        ("ngram_range",    tfidf_p.get("ngram_range")),
-        ("max_features",   tfidf_p.get("max_features")),
-        ("sublinear_tf",   tfidf_p.get("sublinear_tf")),
-        ("min_df",         tfidf_p.get("min_df")),
-        ("vocabulary_size",n_tfidf),
-    ]
-    for k, v in tfidf_show:
-        print(f"    {CYAN}{k:<22}{RESET} {v}")
+    print("\n  TF-IDF Vectorizer (Word)")
+    for k, v in word_p.items():
+        if k in ['analyzer', 'ngram_range', 'max_features']:
+            print(f"    {k:20s} {v}")
 
-    print(f"\n  {BOLD}Combined Feature Matrix{RESET}")
-    print(f"    {CYAN}{'TF-IDF features':<22}{RESET} {n_tfidf}")
-    print(f"    {CYAN}{'Numeric features':<22}{RESET} 25")
-    print(f"    {CYAN}{'Total features':<22}{RESET} {n_tfidf + 25}")
-    print(f"    {CYAN}{'Detected classes':<22}{RESET} {classes}")
+    print("\n  TF-IDF Vectorizer (Char)")
+    for k, v in char_p.items():
+        if k in ['analyzer', 'ngram_range', 'max_features']:
+            print(f"    {k:20s} {v}")
 
     # =========================================================================
     # Section 2 -- Build Test Dataset
