@@ -20,37 +20,11 @@ from datetime import datetime
 from fastapi import APIRouter, UploadFile, File, HTTPException, Body
 from fastapi.responses import JSONResponse
 
-# Add project root to sys.path so ml_engine is importable from the backend
-PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
-sys.path.insert(0, str(PROJECT_ROOT))
-
-MODEL_PATH = PROJECT_ROOT / 'ml_engine' / 'upgraded_amides.pkl'
-
-# Lazy-loaded model singleton — loaded once on first ML request
-_model = None
-_model_load_error: str = ""
-
+from app.services.model_service import get_model, model_status, MODEL_PATH
 
 def _get_model():
-    """Load and cache the UpgradedAMIDES model. Raises RuntimeError if unavailable."""
-    global _model, _model_load_error
-    if _model is not None:
-        return _model
-    if _model_load_error:
-        raise RuntimeError(_model_load_error)
-    try:
-        from ml_engine.upgraded_amides import UpgradedAMIDES
-        _model = UpgradedAMIDES.load(str(MODEL_PATH))
-    except FileNotFoundError:
-        _model_load_error = (
-            f"Model file not found at {MODEL_PATH}. "
-            "Run 'python ml_engine/train.py' to train and save the model."
-        )
-        raise RuntimeError(_model_load_error)
-    except Exception as exc:
-        _model_load_error = f"Failed to load model: {exc}"
-        raise RuntimeError(_model_load_error)
-    return _model
+    """Thin wrapper around the shared model service."""
+    return get_model()
 
 
 router = APIRouter(prefix="/api", tags=["Threat Detection"])
@@ -174,23 +148,8 @@ def health():
 @router.get("/status")
 def get_status():
     """Check whether the ML model file exists and is loaded in memory."""
-    model_exists = MODEL_PATH.exists()
-    model_loaded = _model is not None
-
-    if model_loaded:
-        status = "ready"
-    elif model_exists:
-        status = "model_file_found_not_loaded"
-    else:
-        status = "model_not_trained"
-
-    return {
-        "status":                  status,
-        "model_path":              str(MODEL_PATH),
-        "model_file_exists":       model_exists,
-        "model_loaded_in_memory":  model_loaded,
-        "timestamp":               datetime.now().isoformat(),
-    }
+    info = model_status()
+    return {**info, "timestamp": datetime.now().isoformat()}
 
 
 @router.post("/analyze")
