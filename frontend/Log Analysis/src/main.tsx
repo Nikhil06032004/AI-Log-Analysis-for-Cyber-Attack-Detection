@@ -4,7 +4,6 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 import "./styles/dashboard.css";
 import "./styles/layout.css";
-import "./styles/sidebar.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
