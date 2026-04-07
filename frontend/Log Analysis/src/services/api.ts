@@ -94,6 +94,7 @@ export interface SystemPredictionEntry {
   log_source: string;
   raw_log: string;
   normalized: string;
+  event_id: number;
   threat_type: string;
   severity: string;
   confidence: number;
@@ -125,8 +126,80 @@ export const fetchSystemSources = (): Promise<{ available: LogSource[]; platform
 
 export const collectAndAnalyze = (
   sources: string[],
-  maxEvents: number = 150,
+  maxEvents: number = 0,       // 0 = unlimited
+  since?: string,              // ISO-8601 UTC — only events after this timestamp
+  hoursBack?: number,          // initial load window (default 24h when no `since`)
 ): Promise<SystemAnalysisResult> =>
-  API.post("/api/system/collect-analyze", { sources, max_events: maxEvents }).then(r => r.data);
+  API.post("/api/system/collect-analyze", {
+    sources,
+    max_events: maxEvents,
+    ...(since     ? { since }          : {}),
+    ...(hoursBack ? { hours_back: hoursBack } : {}),
+  }).then(r => r.data);
+
+// ── System resource metrics ───────────────────────────────────────────────────
+
+export interface CpuMetrics {
+  percent:          number;
+  per_core:         number[];
+  count_logical:    number;
+  count_physical:   number;
+  freq_mhz_current: number | null;
+  freq_mhz_max:     number | null;
+  user_pct:         number;
+  system_pct:       number;
+  idle_pct:         number;
+}
+
+export interface RamMetrics {
+  total_gb:      number;
+  used_gb:       number;
+  available_gb:  number;
+  percent:       number;
+  cached_gb:     number;
+  swap_total_gb: number;
+  swap_used_gb:  number;
+  swap_percent:  number;
+}
+
+export interface DiskMetrics {
+  root_total_gb:  number;
+  root_used_gb:   number;
+  root_free_gb:   number;
+  root_percent:   number;
+  read_mb_total:  number;
+  write_mb_total: number;
+  partitions: {
+    device: string; mountpoint: string; fstype: string;
+    total_gb: number; used_gb: number; free_gb: number; percent: number;
+  }[];
+}
+
+export interface NetworkMetrics {
+  bytes_sent_per_s:   number;
+  bytes_recv_per_s:   number;
+  packets_sent_per_s: number;
+  packets_recv_per_s: number;
+  bytes_sent_total:   number;
+  bytes_recv_total:   number;
+}
+
+export interface ProcessInfo {
+  pid: number; name: string; cpu: number; mem: number; status: string;
+}
+
+export interface LiveMetrics {
+  timestamp:     string;
+  platform:      string;
+  hostname:      string;
+  cpu:           CpuMetrics;
+  ram:           RamMetrics;
+  disk:          DiskMetrics;
+  network:       NetworkMetrics;
+  top_processes: ProcessInfo[];
+}
+
+export const fetchLiveMetrics = (): Promise<LiveMetrics> =>
+  API.get<LiveMetrics>("/api/metrics/live").then(r => r.data);
 
 export default API;

@@ -6,6 +6,10 @@ import Threats      from "./pages/Threats";
 import LogExplorer  from "./pages/LogExplorer";
 import NetworkMap   from "./pages/NetworkMap";
 import Analytics    from "./pages/Analytics";
+import SIEMRules      from "./pages/SIEMRules";
+import AIModel        from "./pages/AIModel";
+import Settings       from "./pages/Settings";
+import SystemMonitor  from "./pages/SystemMonitor";
 
 function App() {
   return (
@@ -18,6 +22,10 @@ function App() {
           <Route path="/logs"      element={<LogExplorer />} />
           <Route path="/network"   element={<NetworkMap />}  />
           <Route path="/analytics" element={<Analytics />}   />
+          <Route path="/siem"           element={<SIEMRules />}      />
+          <Route path="/system-monitor" element={<SystemMonitor />}  />
+          <Route path="/ai-model"       element={<AIModel />}        />
+          <Route path="/settings"       element={<Settings />}       />
         </Route>
       </Routes>
     </AnalysisProvider>

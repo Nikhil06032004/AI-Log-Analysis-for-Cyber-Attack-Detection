@@ -53,6 +53,16 @@ WINDOWS_EVENT_LABELS = {
     # Network share
     5140: "network_share_accessed",
     5145: "network_share_object_checked",
+    # Windows Filtering Platform — network connections
+    5156: "network_connection_allowed",
+    5157: "network_connection_blocked",
+    5158: "network_bind_allowed",
+    5159: "network_bind_blocked",
+    # Firewall rule changes
+    4946: "firewall_rule_added",
+    4947: "firewall_rule_modified",
+    4948: "firewall_rule_deleted",
+    5447: "wfp_filter_changed",
     # Log tampering (LOG_EVASION)
     1102: "audit_log_cleared",
     4719: "system_audit_policy_changed",
@@ -60,10 +70,15 @@ WINDOWS_EVENT_LABELS = {
 
 # Fields to extract from UserData / EventData dicts
 _USERDATA_KEYS = [
+    # Auth / account
     "TargetUserName", "SubjectUserName", "IpAddress", "IpPort",
     "LogonType", "ProcessName", "NewProcessName", "CommandLine",
     "ServiceName", "TaskName", "ObjectName", "FailureReason",
     "PrivilegeList", "ShareName", "ParentProcessName",
+    # Network / WFP (EventID 5156 / 5157)
+    "Application", "Direction", "SourceAddress", "SourcePort",
+    "DestAddress", "DestPort", "Protocol", "FilterRTID",
+    "LayerName", "RemoteUserID", "State", "Action", "ProcessID",
 ]
 
 # Placeholder values that carry no information
@@ -142,17 +157,31 @@ def normalize_windows_event(event: dict) -> str:
         "Security[4625]: warning failed_logon An account failed to log on.
          TargetUserName=administrator IpAddress=192.168.1.100 LogonType=3 host=PC01"
     """
-    event_id = int(event.get("EventID", 0))
-    source   = event.get("Source", "Windows") or "Windows"
-    computer = event.get("Computer", "") or ""
-    level    = (event.get("Level", "Information") or "Information").lower()
-    message  = (event.get("Message", "") or "").replace("\n", " ").replace("\r", "").strip()
-    keywords = (event.get("Keywords", "") or "").lower()
+    event_id  = int(event.get("EventID", 0))
+    source    = event.get("Source", "Windows") or "Windows"
+    computer  = event.get("Computer", "") or ""
+    level     = (event.get("Level", "Information") or "Information").lower()
+    message   = (event.get("Message", "") or "").replace("\n", " ").replace("\r", "").strip()
+    keywords  = (event.get("Keywords", "") or "").lower()
+    timestamp = (event.get("TimeCreated", "") or "")[:19]
 
     # EventData is an alias for UserData used by some Windows log parsers
     user_data = event.get("UserData") or event.get("EventData") or {}
 
     label = WINDOWS_EVENT_LABELS.get(event_id, f"event_{event_id}")
+
+    # Decode WFP protocol numbers → name (EventID 5156/5157 Protocol field)
+    proto_raw = str(user_data.get("Protocol", "")).strip()
+    if proto_raw.isdigit():
+        user_data = dict(user_data)   # don't mutate original
+        user_data["Protocol"] = {"1": "icmp", "6": "tcp", "17": "udp"}.get(proto_raw, f"proto{proto_raw}")
+
+    # Decode WFP direction codes
+    direction_raw = str(user_data.get("Direction", "")).strip()
+    if "%%14592" in direction_raw:
+        user_data["Direction"] = "Inbound"
+    elif "%%14593" in direction_raw:
+        user_data["Direction"] = "Outbound"
 
     # Collect meaningful key=value pairs from UserData
     kv_parts = []
@@ -161,10 +190,14 @@ def normalize_windows_event(event: dict) -> str:
         if val and val not in _EMPTY_VALUES:
             kv_parts.append(f"{key}={val}")
 
-    # Build the line
-    parts = [f"{source}[{event_id}]:", level, label]
+    # Build the normalized line — model input
+    parts = [f"{source}[{event_id}:{label}]", level]
+    if timestamp:
+        parts.append(f"time={timestamp}")
     if "failure" in keywords or "fail" in keywords:
         parts.append("AUDIT_FAILURE")
+    elif "success" in keywords:
+        parts.append("AUDIT_SUCCESS")
     if message:
         parts.append(message[:300])
     parts.extend(kv_parts)

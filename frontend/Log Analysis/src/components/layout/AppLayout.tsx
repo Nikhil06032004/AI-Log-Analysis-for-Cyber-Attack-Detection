@@ -5,11 +5,15 @@ import { useAnalysis } from "../../context/AnalysisContext";
 import "../../styles/layout.css";
 
 const NAV = [
-  { label: "Dashboard",    path: "/dashboard" },
-  { label: "Threats",      path: "/threats"   },
-  { label: "Log Explorer", path: "/logs"       },
-  { label: "Network Map",  path: "/network"   },
-  { label: "Analytics",    path: "/analytics" },
+  { label: "Dashboard",       path: "/dashboard"      },
+  { label: "Threats",         path: "/threats"        },
+  { label: "Log Explorer",    path: "/logs"           },
+  { label: "Network Map",     path: "/network"        },
+  { label: "Analytics",       path: "/analytics"      },
+  { label: "SIEM Rules",      path: "/siem"           },
+  { label: "System Monitor",  path: "/system-monitor" },
+  { label: "AI Model",        path: "/ai-model"       },
+  { label: "Settings",        path: "/settings"       },
 ];
 
 const AppLayout: React.FC = () => {

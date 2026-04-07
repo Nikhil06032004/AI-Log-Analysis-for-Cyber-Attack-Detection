@@ -175,7 +175,7 @@ const Dashboard: React.FC = () => {
     try {
       advance("connect"); await delay(400); complete("connect");
       advance("read");
-      const data = await collectAndAnalyze(sources, 500);
+      const data = await collectAndAnalyze(sources);  // no limit — last 24 h
       complete("read");
       setLogsCollected(data.total_collected);
       advance("normalize"); await delay(300); complete("normalize");
@@ -213,12 +213,19 @@ const Dashboard: React.FC = () => {
       }))
     : [];
 
+  // Windows = all windows_* channels (security, system, application, network, firewall)
+  // Network = dedicated "network" source (WFP events / netstat / firewall log)
+  // Syslog  = all syslog_* sources (syslog_windows, syslog_auth, etc.)
   const logVolumeData: LogVolumeDataItem[] = result
     ? Object.entries(result.hourly_volume).map(([label, src]) => ({
         label,
-        windows: (src["windows_security"] ?? 0) + (src["windows_system"] ?? 0) + (src["windows_application"] ?? 0),
+        windows: Object.entries(src)
+          .filter(([k]) => k.startsWith("windows_"))
+          .reduce((s, [, v]) => s + v, 0),
         network: src["network"] ?? 0,
-        syslog:  Object.entries(src).filter(([k]) => k.startsWith("syslog_")).reduce((s, [, v]) => s + v, 0),
+        syslog:  Object.entries(src)
+          .filter(([k]) => k.startsWith("syslog_"))
+          .reduce((s, [, v]) => s + v, 0),
       }))
     : [];
 
