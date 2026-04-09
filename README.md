@@ -671,6 +671,6 @@ This project is licensed under the [MIT License](LICENSE).
 
 <div align="center">
 
-Built by [Nikhil Singh](https://github.com/Nikhil06032004)
+Built by [Nikhil Sharma](https://github.com/Nikhil06032004)
 
 </div>
