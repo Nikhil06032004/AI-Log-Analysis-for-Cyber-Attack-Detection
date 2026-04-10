@@ -11,10 +11,11 @@
 [![XGBoost](https://img.shields.io/badge/XGBoost-ML%20Engine-FF6600?style=flat-square)](https://xgboost.readthedocs.io/)
 [![Vite](https://img.shields.io/badge/Vite-8-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vite.dev/)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel-000000?style=flat-square&logo=vercel&logoColor=white)](https://ai-log-analysis-cyber-attack.vercel.app)
 
 A production-ready, full-stack **Security Information & Event Management (SIEM)** platform powered by a custom-trained XGBoost ensemble. Ingests live Windows Event Logs, network flows, and syslog streams — classifies threats in real time and triggers automated remediation — all visualized through a 9-page interactive React dashboard.
 
-[Getting Started](#setup--installation) · [API Reference](#api-reference) · [ML Engine](#ml-engine--upgradedamides) · [Architecture](#architecture)
+[🚀 Live Demo](https://ai-log-analysis-cyber-attack.vercel.app) · [Getting Started](#setup--installation) · [API Reference](#api-reference) · [ML Engine](#ml-engine--upgradedamides) · [Architecture](#architecture)
 
 </div>
 
@@ -351,10 +352,11 @@ Log-Analysis/
 [![XGBoost](https://img.shields.io/badge/XGBoost-ML%20Engine-FF6600?style=flat-square)](https://xgboost.readthedocs.io/)
 [![Vite](https://img.shields.io/badge/Vite-8-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vite.dev/)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel-000000?style=flat-square&logo=vercel&logoColor=white)](https://ai-log-analysis-cyber-attack.vercel.app)
 
 A production-ready, full-stack **Security Information & Event Management (SIEM)** platform powered by a custom-trained XGBoost ensemble. Ingests live Windows Event Logs, network flows, and syslog streams — classifies threats in real time and triggers automated remediation — all visualized through a 9-page interactive React dashboard.
 
-[Getting Started](#setup--installation) · [API Reference](#api-reference) · [ML Engine](#ml-engine--upgradedamides) · [Architecture](#architecture)
+[🚀 Live Demo](https://ai-log-analysis-cyber-attack.vercel.app) · [Getting Started](#setup--installation) · [API Reference](#api-reference) · [ML Engine](#ml-engine--upgradedamides) · [Architecture](#architecture)
 
 </div>
 
