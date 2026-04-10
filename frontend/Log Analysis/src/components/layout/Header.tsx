@@ -33,7 +33,7 @@ const Header: React.FC<Props> = ({ sidebarOpen: _sidebarOpen, onToggleSidebar, c
       >☰</button>
 
       <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-        <div style={{ width:36, height:36, borderRadius:10, background:`rgba(0,217,255,.12)`, border:`1px solid rgba(0,217,255,.3)`, display:"flex", alignItems:"center", justifyContent:"center", ...M, color:ACC.cyan, fontSize:12, fontWeight:700 }}>AI</div>
+        <img src="/favicon.svg" alt="LogSentinel AI" style={{ width:36, height:36, flexShrink:0 }} />
         <div>
           <p style={{ fontFamily:"'Orbitron',monospace", color:ACC.cyan, fontSize:14, fontWeight:700, letterSpacing:".04em", lineHeight:1 }}>
             SENTINEL<span style={{ color:T.dim }}>·AI</span>
