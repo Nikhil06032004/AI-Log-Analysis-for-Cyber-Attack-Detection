@@ -121,6 +121,24 @@ export interface SystemAnalysisResult {
   timestamp: string;
 }
 
+/** Human-readable labels for backend source IDs shown in tables and charts. */
+export const SOURCE_LABELS: Record<string, string> = {
+  windows_security:    "Win Security",
+  windows_system:      "Win System",
+  windows_application: "Win Application",
+  windows_network:     "Win Network",
+  windows_firewall:    "Win Firewall",
+  network:             "Network",
+  syslog_windows:      "Syslog",
+  syslog_auth:         "Syslog Auth",
+  syslog_kern:         "Syslog Kernel",
+  syslog_messages:     "Syslog Messages",
+};
+
+/** Returns a display label for a source ID, falling back to the raw id. */
+export const sourceLabel = (id: string): string =>
+  SOURCE_LABELS[id] ?? id.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+
 export const fetchSystemSources = (): Promise<{ available: LogSource[]; platform: string; hostname: string }> =>
   API.get("/api/system/sources").then(r => r.data);
 

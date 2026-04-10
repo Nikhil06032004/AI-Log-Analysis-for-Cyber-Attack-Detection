@@ -294,6 +294,39 @@ def normalize_syslog(line: str) -> str:
     return " ".join(line.split())
 
 
+def clean_for_model(text: str) -> str:
+    """
+    Strip high-entropy noise from a normalized log line before model inference.
+
+    Removes:
+      - ISO-8601 timestamps   (e.g. 2026-04-07T05:50:11.776Z)
+      - Hex blobs             (e.g. 0xFFFFFFFF, 1912621072 ≥ 6-digit long numbers)
+      - GUIDs                 (e.g. {6bffd098-a112-...})
+      - Windows format codes  (e.g. %%1832, %%2313)
+      - Binary / base64-like  (runs of non-space chars > 40 chars)
+      - Redundant host= field (hostname adds no threat signal)
+    These patterns inflate character-level TF-IDF entropy and cause the model
+    to misclassify routine informational events as LOG_EVASION.
+    """
+    import re
+    # GUIDs  {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx} or bare
+    text = re.sub(r'\{?[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}'
+                  r'-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\}?', '[GUID]', text)
+    # ISO-8601 timestamps (with or without fractional seconds / Z)
+    text = re.sub(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z?', '[TS]', text)
+    # Hex literals  0x... or standalone long hex strings
+    text = re.sub(r'0x[0-9a-fA-F]+', '[HEX]', text)
+    text = re.sub(r'\b[0-9a-fA-F]{8,}\b', '[HEX]', text)
+    # Windows format-message codes  %%NNNN
+    text = re.sub(r'%%\d{4,}', '[CODE]', text)
+    # Large pure-numeric values (memory addresses, ticks) ≥ 7 digits
+    text = re.sub(r'\b\d{7,}\b', '[NUM]', text)
+    # Very long tokens (binary data / base64) > 40 chars with no spaces
+    text = re.sub(r'\S{41,}', '[BLOB]', text)
+    # Collapse repeated whitespace
+    return " ".join(text.split())
+
+
 # ── Internal helpers ──────────────────────────────────────────────────────────
 
 def _infer_service(dst_port: int, proto: str) -> str:

@@ -28,7 +28,9 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from app.services.model_service import get_model
-from app.services.log_normalizer import normalize_windows_event, normalize_syslog
+from app.services.log_normalizer import (
+    normalize_windows_event, normalize_syslog, clean_for_model,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -182,7 +184,7 @@ def collect_and_analyze(req: CollectRequest):
                    "The sources may be empty, inaccessible, or require elevated privileges.",
         )
 
-    # Normalize
+    # ── Normalize ─────────────────────────────────────────────────────────────
     normalized_lines: List[str] = []
     for item in collected:
         if item.get("event_dict"):
@@ -190,41 +192,214 @@ def collect_and_analyze(req: CollectRequest):
         else:
             normalized_lines.append(normalize_syslog(item["raw"]))
 
-    # Predict in batch
-    predictions = model.predict_batch(normalized_lines)
+    # ── Pre-processing: clean high-entropy noise before model inference ────────
+    # Removes GUIDs, hex blobs, timestamps etc. that inflate TF-IDF entropy
+    # and cause the model to misfire as LOG_EVASION on routine events.
+    cleaned_lines: List[str] = [clean_for_model(line) for line in normalized_lines]
 
-    # Trigger remediation for high/critical (non-blocking)
-    _run_remediation(normalized_lines, predictions)
+    # ── Benign EventID whitelist — always NORMAL regardless of model output ────
+    # Covers routine power, service, startup, boot, DNS, and scheduling events
+    _FORCED_NORMAL_IDS: set = {
+        # Original overrides
+        247, 2051, 2010,
+        # Power management (sleep, wake, hibernate)
+        1, 12, 13, 16, 41, 42, 107, 131, 134,
+        # Event-log lifecycle
+        6005, 6006, 6008, 6009, 6013,
+        # Service control manager — normal start/stop
+        7036, 7040,
+        # Scheduled tasks (non-creation/deletion) — status updates
+        4648,   # logon with explicit creds — benign on workstations
+        4634, 4647,   # logoff
+        4689,   # process exited
+        # Application installs / Windows Installer
+        1033, 1034, 1035, 1040, 1042,
+        11707, 11708, 11724,
+        # Windows Error Reporting / WER
+        1000, 1001, 1002,
+        # DNS client
+        1014,
+        # DCOM / COM (extremely noisy, almost never a real alert)
+        10016,
+        # Kernel-General timing/config
+        15, 20,
+        # Windows Defender / MpCmdRun info events
+        5007,
+        # Group Policy
+        4004, 8004,
+        # Time sync
+        35, 37,
+        # Printer spooler info
+        307, 808,
+        # Disk / filesystem info
+        98, 153,
+        # Common Bluetooth/USB info events
+        34, 400, 401,
+    }
 
-    # Event IDs that are routine Windows operational noise — always NORMAL
-    _FORCED_NORMAL_IDS = {247, 2051, 2010}
+    # ── EventID-based threat class override for windows_security ─────────────
+    # The ML model misclassifies most Windows Security events as LOG_EVASION
+    # because its TF-IDF features fire on structured Windows event text patterns.
+    # For security-critical EventIDs we authoritative assign the correct class;
+    # the model is ONLY used when no EventID rule matches.
+    _SECURITY_EID_THREAT: dict = {
+        # Authentication failures → BRUTE_FORCE
+        4625: ("BRUTE_FORCE", "high"),
+        4771: ("BRUTE_FORCE", "high"),   # Kerberos pre-auth failed
+        4776: ("BRUTE_FORCE", "medium"), # NTLM auth failed
+        4740: ("BRUTE_FORCE", "high"),   # Account locked out
+        # Log / audit tampering → LOG_EVASION (the ONLY valid sources)
+        1102: ("LOG_EVASION", "critical"),  # Audit log cleared
+        4719: ("LOG_EVASION", "high"),      # Audit policy changed
+        # Persistence
+        4698: ("MALWARE", "high"),    # Scheduled task created
+        4699: ("MALWARE", "medium"),  # Scheduled task deleted
+        4697: ("MALWARE", "high"),    # Service installed
+        7045: ("MALWARE", "high"),    # New service installed
+        # Account manipulation
+        4720: ("MALWARE", "medium"),  # User account created
+        4728: ("MALWARE", "medium"),  # Added to global group
+        4732: ("MALWARE", "medium"),  # Added to local group
+        4756: ("MALWARE", "medium"),  # Added to universal group
+        # Privilege escalation
+        4673: ("MALWARE", "medium"),  # Privileged service called
+        # Object / file tampering
+        4660: ("MALWARE", "medium"),  # Object deleted
+        4657: ("MALWARE", "medium"),  # Registry value modified
+        # Network share
+        5140: ("PORT_SCAN", "medium"),
+        5145: ("PORT_SCAN", "low"),
+    }
 
-    # Build results
+    # ── Per-source confidence thresholds ──────────────────────────────────────
+    # Security and network channels are more reliable → lower threshold (0.65).
+    # System/application/syslog channels have more benign noise → higher (0.82).
+    _CONF_THRESHOLD: dict = {
+        "windows_security": 0.65,
+        "network":          0.65,
+        "windows_firewall": 0.65,
+        # All other sources (system, application, syslog, etc.)
+        "_default":         0.82,
+    }
+
+    # ── Semantic source-to-threat constraints ─────────────────────────────────
+    # Certain threat classes are physically impossible for certain sources.
+    # LOG_EVASION (audit log cleared / policy changed) can only happen through
+    # the Security channel (EventIDs 1102, 4719).  Any other source predicting
+    # LOG_EVASION is a model artefact caused by high-entropy text features.
+    # Similarly, netstat/syslog entries cannot be BRUTE_FORCE or DOS_ATTACK
+    # unless there is strong network-specific evidence (handled by threshold).
+    _IMPOSSIBLE_THREATS: dict = {
+        # source_id → set of threat_types that are always false positives
+        "network":             {"LOG_EVASION"},
+        "syslog_windows":      {"LOG_EVASION"},
+        "windows_system":      {"LOG_EVASION"},
+        "windows_application": {"LOG_EVASION"},
+        "windows_network":     {"LOG_EVASION"},
+        "windows_firewall":    {"LOG_EVASION"},
+    }
+
+    # ── Items to run through model (skip pure-Information non-security events) ─
+    # Information-level events from non-security sources virtually never indicate
+    # a real threat; running them through the model produces noise.
+    _SECURITY_SOURCES = {"windows_security", "network", "windows_firewall"}
+
+    needs_model: List[bool] = []
+    for item in collected:
+        ed    = item.get("event_dict") or {}
+        level = (ed.get("Level") or "Information").strip()
+        src   = item.get("source", "")
+        eid   = int(ed.get("EventID", 0))
+        # Skip model if:
+        #   • Whitelisted EventID, OR
+        #   • Information level AND not a security-critical source
+        skip = (eid in _FORCED_NORMAL_IDS) or (
+            level == "Information" and src not in _SECURITY_SOURCES
+        )
+        needs_model.append(not skip)
+
+    # Only send non-skipped entries to the model
+    model_indices   = [i for i, run in enumerate(needs_model) if run]
+    model_inputs    = [cleaned_lines[i] for i in model_indices]
+
+    if model_inputs:
+        model_preds = model.predict_batch(model_inputs)
+    else:
+        model_preds = []
+
+    # Map model outputs back to full index
+    model_pred_map: dict = dict(zip(model_indices, model_preds))
+
+    # ── Trigger remediation for high/critical (non-blocking) ──────────────────
+    _run_remediation(model_inputs, model_preds)
+
+    # ── Build results with post-processing ────────────────────────────────────
+    _NORMAL_PRED: dict = {
+        "threat_type": "NORMAL", "severity": "none", "is_threat": False,
+        "remediation_actions": [], "confidence": 0.5,
+        "top_signals": {},
+    }
+
     results: List[dict] = []
-    for item, norm_line, pred in zip(collected, normalized_lines, predictions):
+    for i, (item, norm_line) in enumerate(zip(collected, normalized_lines)):
         event_id = (item.get("event_dict") or {}).get("EventID", 0)
-        if event_id in _FORCED_NORMAL_IDS:
-            entry_pred = {
-                "threat_type":         "NORMAL",
-                "severity":            "none",
-                "confidence":          pred["confidence"],
-                "is_threat":           False,
-                "remediation_actions": [],
-                "top_signals":         pred["top_signals"],
-            }
+        source   = item.get("source", "")
+
+        if not needs_model[i]:
+            # Whitelisted or Information-level non-security event → NORMAL
+            entry_pred = dict(_NORMAL_PRED)
         else:
-            entry_pred = pred
+            pred = model_pred_map[i]
+            threat_type = pred.get("threat_type", "NORMAL")
+
+            # ── windows_security: use EventID rule if available ────────────────
+            if source == "windows_security" and event_id in _SECURITY_EID_THREAT:
+                rule_type, rule_sev = _SECURITY_EID_THREAT[event_id]
+                entry_pred = {
+                    "threat_type":         rule_type,
+                    "severity":            rule_sev,
+                    "confidence":          max(pred["confidence"], 0.85),
+                    "is_threat":           rule_type != "NORMAL",
+                    "remediation_actions": pred.get("remediation_actions", []),
+                    "top_signals":         pred.get("top_signals", {}),
+                }
+
+            # Check semantic constraint: this threat class is impossible for this source
+            elif threat_type in _IMPOSSIBLE_THREATS.get(source, set()):
+                entry_pred = {
+                    "threat_type":         "NORMAL",
+                    "severity":            "none",
+                    "confidence":          pred["confidence"],
+                    "is_threat":           False,
+                    "remediation_actions": [],
+                    "top_signals":         pred.get("top_signals", {}),
+                }
+            else:
+                # Apply confidence threshold: downgrade to NORMAL if below threshold
+                threshold = _CONF_THRESHOLD.get(source, _CONF_THRESHOLD["_default"])
+                if pred.get("is_threat") and pred.get("confidence", 0) < threshold:
+                    entry_pred = {
+                        "threat_type":         "NORMAL",
+                        "severity":            "none",
+                        "confidence":          pred["confidence"],
+                        "is_threat":           False,
+                        "remediation_actions": [],
+                        "top_signals":         pred.get("top_signals", {}),
+                    }
+                else:
+                    entry_pred = pred
+
         results.append({
-            "log_source":          item["source"],
+            "log_source":          source,
             "raw_log":             item["raw"][:400],
             "normalized":          norm_line[:400],
             "event_id":            event_id,
             "threat_type":         entry_pred["threat_type"],
             "severity":            entry_pred["severity"],
-            "confidence":          round(entry_pred["confidence"], 4),
+            "confidence":          round(float(entry_pred["confidence"]), 4),
             "is_threat":           entry_pred["is_threat"],
-            "remediation_actions": entry_pred["remediation_actions"],
-            "top_signals":         dict(entry_pred["top_signals"]),
+            "remediation_actions": entry_pred.get("remediation_actions", []),
+            "top_signals":         dict(entry_pred.get("top_signals", {})),
         })
 
     threats     = [r for r in results if r["is_threat"]]

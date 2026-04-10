@@ -3,7 +3,12 @@ uvicorn[standard]
 pydantic-settings
 python-dotenv
 pandas
+numpy
+scipy
 scikit-learn
+imbalanced-learn
+xgboost
 joblib
 python-multipart
 psutil
+kagglehub

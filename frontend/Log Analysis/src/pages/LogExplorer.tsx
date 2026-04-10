@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { ingestSyslogLines, analyzeLogLine } from "../services/api";
+import { ingestSyslogLines, analyzeLogLine, sourceLabel } from "../services/api";
 import type { AnalysisResult } from "../services/api";
 import { useAnalysis } from "../context/AnalysisContext";
 import { BORD, T, ACC, M } from "../constants/theme";
@@ -30,7 +30,7 @@ const LogExplorer: React.FC = () => {
         id: `L${i}`,
         time: new Date(analysisResult.timestamp).toLocaleTimeString(),
         level: level as "INFO" | "WARN" | "ERROR" | "CRITICAL",
-        source: e.log_source,
+        source: sourceLabel(e.log_source),
         message: e.normalized,
       };
     }).sort((a, b) => (LEVEL_ORDER[a.level] ?? 3) - (LEVEL_ORDER[b.level] ?? 3));

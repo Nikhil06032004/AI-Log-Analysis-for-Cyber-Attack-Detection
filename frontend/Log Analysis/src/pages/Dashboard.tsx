@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAnalysis } from "../context/AnalysisContext";
-import { collectAndAnalyze } from "../services/api";
+import { collectAndAnalyze, sourceLabel } from "../services/api";
 import type { SystemAnalysisResult, SystemPredictionEntry } from "../services/api";
 import { BORD, T, ACC, M } from "../constants/theme";
 import StatCard from "../components/ui/StatCard";
@@ -113,7 +113,7 @@ const RecentAlertsTable: React.FC<{ entries: SystemPredictionEntry[] }> = ({ ent
                 {e.threat_type.replace(/_/g, " ")}
               </p>
               <p style={{ ...M, fontSize: 9, color: T.lo, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {ip} · {e.log_source}
+                {ip} · {sourceLabel(e.log_source)}
               </p>
             </div>
 

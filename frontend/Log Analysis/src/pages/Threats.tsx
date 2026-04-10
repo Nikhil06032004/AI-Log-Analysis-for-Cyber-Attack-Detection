@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { useAnalysis } from "../context/AnalysisContext";
 import type { SystemPredictionEntry } from "../services/api";
+import { sourceLabel } from "../services/api";
 import { BORD, T, ACC, M } from "../constants/theme";
 
 const SEV_COLOR: Record<string, string> = {
@@ -237,7 +238,7 @@ const ThreatRow: React.FC<{ entry: SystemPredictionEntry & { displaySev: string 
         <p style={{ ...M, fontSize: 10, color: T.hi, marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {entry.normalized}
         </p>
-        <p style={{ ...M, fontSize: 9, color: T.dim }}>{entry.log_source}</p>
+        <p style={{ ...M, fontSize: 9, color: T.dim }}>{sourceLabel(entry.log_source)}</p>
       </div>
 
       {/* IP / source */}
